@@ -97,16 +97,133 @@ The objective of this analysis is to:
   df = pd.read_csv('Spotify_history.csv', encoding='latin-1')
   df
 ```
-
 ``` python
   df.shape
 ```
+![image](https://github.com/user-attachments/assets/b5e0e817-c2f4-415c-9118-1d18be68ea93)
 ``` python
   df.ndim
 ```
+![image](https://github.com/user-attachments/assets/a0376c9d-c626-45b5-b5f8-7ec4b8c7374e)
+``` python
+  df.info()
+```
+![image](https://github.com/user-attachments/assets/dc511876-98ab-4912-a8de-a22780f273b8)
+- Checking for Null/Nan values in all the rows and columns and removing them accordingly
+``` python
+  df.isna().sum()/len(df)
+```
+![image](https://github.com/user-attachments/assets/42cd19a7-6e2b-42ea-adb4-a5771df1c429)
+``` python
+df.drop_duplicates(inplace=True)
 
+df['reason_start'].isna().sum()
+df.dropna(subset=['reason_start'], inplace=True)
 
+df['reason_end'].isna().sum()
+df.dropna(subset=['reason_end'], inplace=True)
 
+df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+df['date'] = df['Timestamp'].dt.date
+df['time'] = df['Timestamp'].dt.time
+```
+- Descriptive Statistics
+``` python
+df.describe()
+```
+![image](https://github.com/user-attachments/assets/5157b88e-3150-42a5-82ec-681776e52cd4)
+``` python
+  df.rename(columns={'spotify_track_uri':'URL'}, inplace=True)
+  df.columns
+```
+![image](https://github.com/user-attachments/assets/ffb69c9d-0f1a-427b-9b7f-88f495c186bc)
+``` python
+  df.drop('URL', axis=1, inplace=True)
+  new_column_order = ['Timestamp', 'date', 'time','artist_name','track_name','album_name', 'ms_played','platform','shuffle','skipped','reason_start','reason_end']
+  df = df[new_column_order]
+  df
+```
+![image](https://github.com/user-attachments/assets/2236902f-fbc1-46ef-b480-8d824090b352)
+
+A.  User Engagement & Listening Behavior
+``` python
+   # 1 The relationship between 'ms_played' and 'skipped'
+   plt.figure(figsize=(15, 10))
+
+   plt.subplot(2,3,1)
+   sns.boxplot(x='skipped', y='ms_played', data=df)
+   plt.title('Song Duration vs. Skipping Behavior')
+
+   # 2.Investigation on the impact of 'shuffle' mode
+   plt.subplot(2,3,3)
+   sns.countplot(x='skipped', hue='shuffle', data=df)
+   plt.title('Skipping Behavior in Shuffle Mode')
+
+   # 3.To Analyze skipping reasons ('reason_start' and 'reason_end')
+   plt.subplot(2,3,4)
+   sns.countplot(x='reason_start', hue='skipped', data=df)
+   plt.title('Skipping Behavior Based on Reason for Starting the Song')
+   plt.xticks(rotation=45, ha='right')
+   plt.subplot(2,3,6)
+
+   sns.countplot(x='reason_end', hue='skipped', data=df)
+   plt.title('Skipping Behavior Based on Reason for Ending the Song')
+   plt.xticks(rotation=45, ha='right')
+
+   #4 To analyze the skipped reasons hourly
+   plt.subplot(2,3,5)
+   df['hour'] = df['Timestamp'].dt.hour
+   sns.countplot(x='hour', hue='skipped', data=df)
+   plt.title('Skipping Behavior Over Time of Day')
+   plt.xlabel('Hour of Day')
+   plt.ylabel('Count')
+
+  plt.tight_layout()
+  plt.show()
+```
+
+``` python
+  sns.countplot(x='skipped', hue='shuffle', data=df)
+```
+
+``` python
+  # 1. Quantifying the Difference (Skip Rate)
+  skip_rate_shuffle = df[df['shuffle'] == True]['skipped'].mean()
+  skip_rate_no_shuffle = df[df['shuffle'] == False]['skipped'].mean()
+
+  print(f"Skip rate with shuffle: {skip_rate_shuffle:.2%}")
+  print(f"Skip rate without shuffle: {skip_rate_no_shuffle:.2%}")
+
+  # 2. Time of Day Analysis
+  hourly_skip_rates = df.groupby(['hour', 'shuffle'])['skipped'].mean().unstack()
+
+  # Plotting hourly skip rates for both shuffle and no shuffle.
+  plt.figure(figsize=(12, 6))
+  plt.plot(hourly_skip_rates.index, hourly_skip_rates[True], label='Shuffle On')
+  plt.plot(hourly_skip_rates.index, hourly_skip_rates[False], label='Shuffle Off')
+
+  plt.xlabel("Hour of Day")
+  plt.ylabel("Skip Rate")
+  plt.title("Hourly Skip Rates (Shuffle vs. No Shuffle)")
+  plt.legend()
+  plt.grid(True)
+  plt.show()
+
+  # 3. Platform Differences (if platform data is available)
+  if 'platform' in df.columns:
+     platform_skip_rates = df.groupby(['platform', 'shuffle'])['skipped'].mean().unstack()
+     print("\nSkip rates by platform:")
+     print(platform_skip_rates)
+
+  #4. Analyze skip rates based on start and end reasons for both shuffle and no shuffle
+  start_reason_impact = pd.pivot_table(df, values='skipped', index='reason_start', columns='shuffle', aggfunc='mean')
+  end_reason_impact = pd.pivot_table(df, values='skipped', index='reason_end', columns='shuffle', aggfunc='mean')
+
+  print("\nSkip rates by reason for starting a song:")
+  print(start_reason_impact)
+  print("\nSkip rates by reason for ending a song:")
+  end_reason_impact
+```
 
 
 
