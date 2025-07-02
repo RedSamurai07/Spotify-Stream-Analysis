@@ -68,13 +68,13 @@ The objective of this analysis is to:
 | Timestamp | Timestamp indicating when the track stopped playing in UTC (Coordinated Universal Time) | Object | 
 | platform | Platform used when streaming the track | Object |
 | ms_played | Number of milliseconds the stream was played | int |
-| track_name | Name of the track |
-| artist_name | Name of the artist |
-| album_name | Name of the album |
-| reason_start | Why the track started |
-| reason_end | Why the track ended |
-| shuffle | TRUE or FALSE depending on if shuffle mode was used when playing the track |
-| skipped | TRUE of FALSE depending on if the user skipped to the next song | 
+| track_name | Name of the track | Object |
+| artist_name | Name of the artist | Object |
+| album_name | Name of the album | Object |
+| reason_start | Why the track started | Object |
+| reason_end | Why the track ended | Object |
+| shuffle | TRUE or FALSE depending on if shuffle mode was used when playing the track | bool |
+| skipped | TRUE of FALSE depending on if the user skipped to the next song | bool |
 
 ### Tools
 - Excel : Google Sheets - Check for data types, Table formatting
@@ -715,9 +715,361 @@ A.  User Engagement & Listening Behavior
 
 5. Time-Based Listening Patterns
 ``` python
-  
-```
+  # H₀: There is no difference in streaming behavior between weekdays and weekends.
+  # H₁: Users listen to music significantly more or less on weekends compared to weekdays.
 
+  df['date'] = pd.to_datetime(df['date'])
+
+  #Extracting the day of the week (0 for Monday, 6 for Sunday)
+  df['day_of_week'] = df['date'].dt.dayofweek
+
+  # Creating a 'weekday' column (1 for weekday, 0 for weekend)
+  df['weekday'] = (df['day_of_week'] < 5).astype(int)
+
+  # Grouping by 'weekday' and calculate the average listening time
+  weekday_listening = df.groupby('weekday')['ms_played'].mean()
+
+  #We Perform a t-test
+  t_statistic, p_value = ttest_ind(df[df['weekday'] == 1]['ms_played'],
+  df[df['weekday'] == 0]['ms_played'])
+
+  print(f"T-statistic: {t_statistic}")
+  print(f"P-value: {p_value}")
+
+  alpha = 0.05  # Significance level
+
+  if p_value < alpha:
+    print("Reject H₀: There is a significant difference in listening behavior between weekdays and weekends.")
+  else:
+    print("Fail to reject H₀: No significant difference in listening behavior between weekdays and weekends.")
+```
+![image](https://github.com/user-attachments/assets/8d707bf3-ae78-4b33-9e6a-e2e9586f892f)
+``` python
+  # H₀: Users engage with music at the same rate throughout the day.
+  # H₁: There are specific peak listening hours when engagement is significantly higher.
+  from scipy.stats import kruskal # Use Kruskal-Wallis for non-parametric test
+
+  # Converting timestamp column to datetime objects (if necessary)
+  df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+  # Extracting the hour of the day
+  df['hour'] = df['Timestamp'].dt.hour
+
+  hourly_engagement = df.groupby('hour')['ms_played'].sum()
+
+  # We Perform Kruskal-Wallis test (non-parametric alternative to ANOVA)
+  # This test checks for significant differences across multiple groups (hours)
+  statistic, p_value = kruskal(*[group for _, group in df.groupby('hour')['ms_played']])
+
+  print(f"Kruskal-Wallis statistic: {statistic:.3f}")
+  print(f"P-value: {p_value:.3f}")
+
+  alpha = 0.05
+
+  if p_value < alpha:
+    print("Reject the null hypothesis. There's a significant difference in listening behavior across different hours of the day.")
+  else:
+    print("Fail to reject the null hypothesis. There's no significant difference in listening behavior across different hours of the day.")
+```
+![image](https://github.com/user-attachments/assets/11fa75ef-0745-4e92-ae22-f27274758545)
+ ``` python
+   # Further we analysis:
+   plt.figure(figsize=(10, 6))
+   plt.plot(hourly_engagement.index, hourly_engagement.values)
+   plt.xlabel('Hour of the day')
+   plt.ylabel('Total listening time (ms)')
+   plt.title('Hourly Listening Engagement')
+   plt.xticks(range(24))
+   plt.show()
+```
+![image](https://github.com/user-attachments/assets/4ab1f801-9bed-4d67-8500-1b631296165d)
+``` python
+  # H₀: The top 10 artists by total playtime have the same average play duration per song.
+  # H₁: The top 10 artists have significantly different average play durations per song
+  from scipy.stats import f_oneway
+
+  # 1. Identifying the top 10 artists by total playtime
+  top_10_artists = df.groupby('artist_name')['ms_played'].sum().nlargest(10).index
+
+  # 2. Calculating average play duration per song for each of the top 10 artists
+  average_play_durations = []
+  for artist in top_10_artists:
+      artist_data = df[df['artist_name'] == artist]
+      total_playtime = artist_data['ms_played'].sum()
+      num_songs = len(artist_data['track_name'].unique())
+
+      if num_songs > 0:
+        avg_duration = total_playtime / num_songs
+      else:
+        avg_duration = 0
+
+      average_play_durations.append(avg_duration)
+
+ # 3.We Perform ANOVA test
+ f_statistic, p_value = f_oneway(*[df[df['artist_name'] == artist]['ms_played'] for artist in top_10_artists])
+
+ print(f"F-statistic: {f_statistic}")
+ print(f"P-value: {p_value}")
+
+ alpha = 0.05
+ if p_value < alpha:
+     print("Reject the null hypothesis. The top 10 artists have significantly different average play durations per song.")
+ else:
+     print("Fail to reject the null hypothesis. The top 10 artists have similar average play durations per song.")
+```
+![image](https://github.com/user-attachments/assets/cd1d228f-2157-4cb5-8ba1-ded6a8c8e1fa)
+
+2. SQL
+   
+A). **User Engagement & Listening Behavior**
+
+1. What factors influence song skipping behavior?
+``` sql 
+  SELECT
+  artist_name,
+  track_name,
+  album_name,
+  platform,
+  shuffle,
+  AVG(ms_played) AS avg_play_time,
+  COUNT(*) AS play_count,
+  SUM(skipped) / COUNT(*) AS skip_rate
+  FROM
+  `spotify_history.songs`
+  GROUP BY artist_name, track_name, album_name, platform, shuffle
+  ORDER BY skip_rate DESC;
+   ```
+  Results:
+  
+  ![image](https://github.com/user-attachments/assets/c7ad02c7-53bf-49cc-9fd7-c78fc56c4518)
+  
+  ![image](https://github.com/user-attachments/assets/0a430483-8587-4828-9533-ff3a37a33882)
+
+2.How does shuffle mode impact the way users listen to songs?
+``` sql
+  SELECT
+  shuffle,
+  COUNT(*) AS total_plays,
+  SUM(skipped) AS total_skips,
+  SUM(skipped) * 100.0 / COUNT(*) AS skip_percentage,
+  AVG(ms_played) AS avg_play_time
+  FROM
+  `spotify_history.songs`
+  GROUP BY shuffle;
+```  
+Results:
+
+![image](https://github.com/user-attachments/assets/dd06a0dd-3543-45b1-a3aa-67b541324d4b)
+
+3.Which platform (mobile, desktop, web) has the highest user engagement?
+``` sql
+  SELECT
+  platform,
+  COUNT(*) AS total_streams,
+  SUM(ms_played) AS total_play_time,
+  AVG(ms_played) AS avg_play_time_per_stream
+  FROM
+  `spotify_history.songs`
+  GROUP BY platform
+  ORDER BY total_play_time DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/ad675185-6cbb-4774-8c26-6d6661bb98a4)
+
+4.What percentage of streams are played in full vs. skipped?
+``` sql
+  SELECT
+  COUNT(*) AS total_streams,
+  SUM(CASE WHEN skipped = 1 THEN 1 ELSE 0 END) AS total_skipped,
+  SUM(CASE WHEN skipped = 0 THEN 1 ELSE 0 END) AS total_completed,
+  SUM(CASE WHEN skipped = 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS percentage_completed,
+  SUM(CASE WHEN skipped = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS percentage_skipped
+  FROM
+  `spotify_history.songs`
+```
+Results: 
+
+![image](https://github.com/user-attachments/assets/91b6faa7-bc6d-4510-aa2f-64fcb8af5624)
+
+5.How does listening behavior differ by time of day or day of the week?
+``` sql
+  SELECT
+  day_of_week,
+  hour,
+  COUNT(*) AS total_streams,
+  SUM(ms_played) AS total_play_time,
+  AVG(ms_played) AS avg_play_time
+  FROM
+  `spotify_history.songs`
+  GROUP BY day_of_week, hour
+  ORDER BY day_of_week, hour;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/0f5401ee-6ee9-4e86-bcc1-dc9d80384c43)
+
+B. **Content Performance & Trends**
+1.What are the most played and most skipped songs?
+``` sql
+  SELECT
+  track_name,
+  artist_name,
+  COUNT(*) AS total_plays,
+  SUM(skipped) AS total_skips,
+  SUM(skipped) * 100.0 / COUNT(*) AS skip_rate
+  FROM
+  `spotify_history.songs`
+  GROUP BY track_name, artist_name
+  ORDER BY total_plays DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/7c110602-e362-48dc-b25c-7384bc2e47d6)
+
+![image](https://github.com/user-attachments/assets/fd3fb848-d50d-40ab-a223-cdcc9875ce6a)
+
+2.Which artists and albums have the highest total playtime?
+``` sql
+  SELECT
+  artist_name,
+  album_name,
+  SUM(ms_played) AS total_play_time,
+  COUNT(*) AS total_streams,
+  AVG(ms_played) AS avg_play_time
+  FROM
+  `spotify_history.songs`
+  GROUP BY artist_name, album_name
+  ORDER BY total_play_time DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/73c30fcd-243a-4e15-bc83-9e504a8ccead)
+
+![image](https://github.com/user-attachments/assets/9a5f4c7e-18c9-41f7-834c-35501989f8a0)
+
+3.Are there specific genres or artists that users skip more frequently?
+``` sql
+  SELECT
+  artist_name,
+  COUNT(*) AS total_plays,
+  SUM(skipped) AS total_skips,
+  SUM(skipped) * 100.0 / COUNT(*) AS skip_rate
+  FROM
+  `spotify_history.songs`
+  GROUP BY artist_name
+  ORDER BY skip_rate DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/2c2995e1-1fe1-403d-9a32-bb1ee12b6b71)
+
+4.How does a song’s popularity or release year affect skipping rates?
+``` sql
+  SELECT
+  popularity,
+  release_year,
+  COUNT(*) AS total_plays,
+  SUM(skipped) AS total_skips,
+  SUM(skipped) * 100.0 / COUNT(*) AS skip_rate
+  FROM `spotify_history.songs`
+  GROUP BY popularity, release_year
+  ORDER BY popularity DESC, release_year DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/79c300de-2a5d-4ec8-a827-48a760c96f7c)
+
+5.Is there a correlation between song duration and completion rates?
+``` sql
+  SELECT
+  track_name,
+  artist_name,
+  seconds_played,
+  COUNT(*) AS total_plays,
+  SUM(skipped) AS total_skips,
+  SUM(CASE WHEN skipped = 0 THEN 1 ELSE 0 END) AS total_completed,
+  SUM(CASE WHEN skipped = 0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*) AS completion_rate
+  FROM `spotify_history.songs`
+  GROUP BY track_name, artist_name, seconds_played
+  ORDER BY completion_rate DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/488353a3-a8d3-411b-bea1-445859794ccf)
+
+![image](https://github.com/user-attachments/assets/57d3a202-49a0-4d94-8142-5070eb7b6a4d)
+
+C. **Platform & Feature Analysis**
+1.	Do users listen to music differently on mobile vs. desktop vs. web?
+``` sql
+  SELECT
+  platform,
+  COUNT(*) AS total_streams,
+  SUM(ms_played) AS total_play_time,
+  AVG(ms_played) AS avg_play_time,
+  SUM(skipped) * 100.0 / COUNT(*) AS skip_rate
+  FROM
+  `spotify_history.songs`
+  GROUP BY platform
+  ORDER BY total_play_time DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/2ae40029-1ada-4107-ad56-58e51b3752cb)
+
+2.	How does autoplay (songs started without user action) compare to manually selected songs in terms of engagement?
+``` sql
+  SELECT
+  reason_start,
+  COUNT(*) AS total_streams,
+  SUM(ms_played) AS total_play_time,
+  AVG(ms_played) AS avg_play_time,
+  SUM(skipped) * 100.0 / COUNT(*) AS skip_rate
+  FROM
+  `spotify_history.songs`
+  GROUP BY reason_start
+  ORDER BY total_play_time DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/0edc6032-a0dd-4a57-8d66-93ab690b1fb6)
+
+![image](https://github.com/user-attachments/assets/bda12d53-b258-40b3-b1c1-811acb30acb3)
+
+3.	What is the average play duration per session for different platforms?
+``` sql
+  SELECT
+  platform,
+  AVG(listening_time) AS avg_play_duration_per_session
+  FROM
+  `spotify_history.songs`
+  GROUP BY platform
+  ORDER BY avg_play_duration_per_session DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/5d6ecabe-be38-408d-94bd-400026d595f8)
+
+4.	What percentage of users replay the same song multiple times?
+``` sql
+  SELECT
+  track_name,
+  artist_name,
+  COUNT(*) AS play_count,
+  COUNT(DISTINCT platform) AS unique_users,
+  (COUNT(*) - COUNT(DISTINCT platform)) * 100.0 / COUNT(*) AS replay_percentage
+  FROM
+  `spotify_history.songs`
+  GROUP BY track_name, artist_name
+  HAVING play_count > 1
+  ORDER BY replay_percentage DESC;
+```
+Results:
+
+![image](https://github.com/user-attachments/assets/96fe2ffd-7e96-4df6-ac20-fe969f905433)
+
+![image](https://github.com/user-attachments/assets/d0d1a337-0463-4a09-b4e2-445bf96f489e)
 
 ### Insights
 - Skipping behaviour based on reason for starting the song was more on trackdone, fwdbtn.
