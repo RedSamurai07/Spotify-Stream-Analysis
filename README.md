@@ -181,11 +181,11 @@ A.  User Engagement & Listening Behavior
   plt.tight_layout()
   plt.show()
 ```
-
+![image](https://github.com/user-attachments/assets/24b0ed5a-9860-4fb2-9b82-5809f7c50be5)
 ``` python
   sns.countplot(x='skipped', hue='shuffle', data=df)
 ```
-
+![image](https://github.com/user-attachments/assets/ada77244-439d-45c2-9fbf-5ab2f5ee2413)
 ``` python
   # 1. Quantifying the Difference (Skip Rate)
   skip_rate_shuffle = df[df['shuffle'] == True]['skipped'].mean()
@@ -224,7 +224,499 @@ A.  User Engagement & Listening Behavior
   print("\nSkip rates by reason for ending a song:")
   end_reason_impact
 ```
+![image](https://github.com/user-attachments/assets/9fd81b20-dd06-44f1-82ec-2a5e140951ea)
+``` python
+  # By Calculating the number of listening events per platform
+  platform_counts = df['platform'].value_counts()
 
+  # To Identify the platform with the highest number of listening events
+  highest_engagement_platform = platform_counts.index[0]
+
+  print(f"The platform with the highest user engagement is: {highest_engagement_platform}")
+```
+![image](https://github.com/user-attachments/assets/6455a720-9386-4c70-95dd-4f0528cf2e53)
+``` python
+  skipped_percentage = df['skipped'].mean() * 100
+  completed_percentage = 100 - skipped_percentage
+
+  print(f"Percentage of streams played in full: {completed_percentage:.2f}%")
+  print(f"Percentage of streams skipped: {skipped_percentage:.2f}%")
+```
+![image](https://github.com/user-attachments/assets/99561a64-9c57-4160-bc78-e8873f84e7ad)
+``` python
+  Time of Day Analysis
+  #hourly Analysis
+  hourly_listen_counts = df.groupby(df['Timestamp'].dt.hour)['ms_played'].count()
+
+  plt.figure(figsize=(12, 6))
+  plt.plot(hourly_listen_counts.index, hourly_listen_counts.values)
+  plt.xlabel("Hour of Day")
+  plt.ylabel("Number of Listening Events")
+  plt.title("Listening Behavior Over Time of Day")
+  plt.grid(True)
+  plt.show()
+
+  2. Day of the Week Analysis
+  df['day_of_week'] = df['Timestamp'].dt.dayofweek  # Monday=0, Sunday=6
+  day_listen_counts = df.groupby('day_of_week')['ms_played'].count()
+
+  plt.figure(figsize=(10, 5))
+  plt.bar(day_listen_counts.index, day_listen_counts.values)
+  plt.xlabel("Day of the Week (0=Monday, 6=Sunday)")
+  plt.ylabel("Number of Listening Events")
+  plt.title("Listening Behavior by Day of the Week")
+  plt.xticks(range(7))
+  plt.show()
+
+  By Combining time of day and day of the week
+  df['hour_day'] = df['Timestamp'].dt.strftime('%H:%M')
+  day_hour = df.groupby(['day_of_week','hour_day'])['ms_played'].count().reset_index()
+
+  plt.figure(figsize=(15,6))
+  sns.pointplot(x='hour_day',y='ms_played',hue='day_of_week',data=day_hour)
+  plt.xlabel('Hour')
+  plt.ylabel('Number of Songs Played')
+  plt.xticks(rotation=90)
+  plt.title('Number of Songs Played per Hour on each Day of the week')
+  plt.show()
+```
+![image](https://github.com/user-attachments/assets/532ae7e3-8800-414e-9e6c-1fa61bc5b6ae)
+![image](https://github.com/user-attachments/assets/1ba8d751-5cf8-444b-b6db-29848c2bf8fa)
+![image](https://github.com/user-attachments/assets/df1211f4-5db5-4e09-aa01-f45170e95bfc)
+
+2. Content Performance & Trends
+``` python
+  most_played = df.groupby('track_name')['ms_played'].sum().sort_values(ascending=False)
+
+  # Displaying the top 10 most played songs
+  print("Top 10 Most Played Songs:\n", most_played.head(10))
+```
+![image](https://github.com/user-attachments/assets/20ef2628-b07d-4e9a-8fcd-a03b7e00ccbe)
+``` python
+  # Grouping by track name and count the number of skips
+  most_skipped = df[df['skipped'] == True].groupby('track_name')['skipped'].count().sort_values(ascending=False)
+
+  # Displaying the top 10 most skipped songs
+  print("\nTop 10 Most Skipped Songs:\n", most_skipped.head(10))
+```
+![image](https://github.com/user-attachments/assets/c4b880e0-48e0-4550-bfa9-06696f20e098)
+``` python
+  artist_playtime = df.groupby('artist_name')['ms_played'].sum().sort_values(ascending=False)
+
+  # Displaying the top 10 artists with the highest total playtime
+  print("Top 10 Artists with Highest Total Playtime:\n", artist_playtime.head(10))
+```
+![image](https://github.com/user-attachments/assets/8d53e0fe-6f6d-406b-a166-3946ff53378e)
+``` python
+![image](https://github.com/user-attachments/assets/d30ec09b-68aa-4d67-9f2b-f77844249d9c)
+```
+``` python
+  # Calculating total playtime for each album
+  album_playtime = df.groupby('album_name')['ms_played'].sum().sort_values(ascending=False)
+
+  # Displaying the top 10 albums with the highest total playtime
+  print("\nTop 10 Albums with Highest Total Playtime:\n", album_playtime.head(10))
+```
+![image](https://github.com/user-attachments/assets/b3a7f22b-94da-46fe-887d-9c81956418fc)
+``` python
+  artist_skip_rates = df.groupby('artist_name')['skipped'].sum().sort_values(ascending=False)/len(df)
+
+  # Displaying the top 10 artists with the highest skip rates
+  print("Top 10 Artists with Highest Skip Rates:\n", artist_skip_rates.head(10))
+```
+![image](https://github.com/user-attachments/assets/b2241a96-9dba-4eb4-80e0-7c4fd30b3ea2)
+``` python
+  # Convert 'ms_played' to seconds for easier interpretation
+  df['seconds_played'] = df['ms_played'] / 1000
+  np.random.seed(42) #for consistent results
+  df['popularity'] = np.random.randint(1, 101, size=len(df))
+
+  df['release_year'] = np.random.randint(2000, 2024, size=len(df))
+
+  # Analyzing the relationship between popularity and skipping
+  plt.figure(figsize=(10, 6))
+  sns.boxplot(x='skipped', y='popularity', data=df)
+  plt.title('Popularity vs Skipping')
+  plt.show()
+
+
+  # Analyzing the relationship between release_year and skipping
+  plt.figure(figsize=(12, 6))
+  sns.countplot(x='release_year', hue='skipped', data=df)
+  plt.title('Release Year vs Skipping')
+  plt.xticks(rotation=45)
+  plt.show()
+
+  # Calculating the correlation between popularity, release_year, and skipped
+  correlation_matrix = df[['popularity', 'release_year', 'skipped']].corr()
+  print("\nCorrelation Matrix:\n", correlation_matrix)
+```
+![image](https://github.com/user-attachments/assets/f02ba5c0-af09-4bf2-807c-43406ebda672)
+![image](https://github.com/user-attachments/assets/598f6968-ed36-4440-9cc4-73bf13bb26bf)
+![image](https://github.com/user-attachments/assets/54d9f3dc-4e51-4589-bc05-428d1ee815db)
+``` python
+  # Grouping data by popularity bins and calculate the average skip rate for each bin.
+  bins = [0, 25, 50, 75, 100]
+  labels = ['0-25', '26-50', '51-75', '76-100']
+  df['popularity_bin'] = pd.cut(df['popularity'], bins=bins, labels=labels, right=False)
+  popularity_skip_rates = df.groupby('popularity_bin')['skipped'].mean()
+  print("\nAverage Skip Rates by Popularity Bin:\n", popularity_skip_rates)
+
+  # Group by release year and check skip rates
+  release_year_skip_rates = df.groupby('release_year')['skipped'].mean()
+  print("\nAverage Skip Rates by Release Year:\n", release_year_skip_rates)
+```
+![image](https://github.com/user-attachments/assets/c300728c-eeed-4409-9808-ad700b42d609)
+![image](https://github.com/user-attachments/assets/287ec170-188d-4835-b487-3df1cd814a8a)
+
+``` python
+  # Calculating the correlation between song duration ('ms_played') and skipped
+  correlation = df['ms_played'].corr(df['skipped'])
+  print(f"Correlation between song duration and completion rates: {correlation}")
+
+  # Visualizing the relationship
+  plt.figure(figsize=(8, 6))
+  sns.scatterplot(x='ms_played', y='skipped', data=df)
+  plt.title('Song Duration vs. Skipped')
+  plt.xlabel('Song Duration (ms)')
+  plt.ylabel('Skipped (1=Skipped, 0=Not Skipped)')
+  plt.show()
+```
+![image](https://github.com/user-attachments/assets/a0dd0732-dab6-4f04-8f48-caec5957b01f)
+``` python
+  platform_skip_rates = df.groupby('platform')['skipped'].mean()
+
+  print("\nAverage Skip Rates by Platform:\n", platform_skip_rates)
+
+  # Visualizing the average skip rates by platform using a bar plot.
+  plt.figure(figsize=(8, 6))
+  sns.barplot(x=platform_skip_rates.index, y=platform_skip_rates.values)
+  plt.title('Average Skip Rates by Platform')
+  plt.xlabel('Platform')
+  plt.ylabel('Average Skip Rate')
+  plt.show()
+```
+![image](https://github.com/user-attachments/assets/14e153ed-0e70-4856-abcb-26b3936a82c1)
+![image](https://github.com/user-attachments/assets/9472f8c0-f128-4dc1-b057-72b8d9e76528)
+``` python
+  #Further analysis by platform:
+  1. Total listening time
+  platform_listen_time = df.groupby('platform')['ms_played'].sum()
+  print("\nTotal Listening Time by Platform:\n", platform_listen_time)
+
+  2. Number of songs played
+  platform_songs_played = df.groupby('platform')['track_name'].count()
+  print("\nNumber of Songs Played by Platform:\n", platform_songs_played)
+
+  3. Average song duration played
+  platform_avg_song_duration = df.groupby('platform')['ms_played'].mean()
+  print("\nAverage Song Duration Played by Platform:\n", platform_avg_song_duration)
+
+  4. Hourly listening pattern:
+  hourly_platform_listen = df.groupby(['platform', df['Timestamp'].dt.hour])['ms_played'].count().reset_index()
+
+  plt.figure(figsize=(15, 6))
+  sns.pointplot(x='Timestamp', y='ms_played', hue='platform', data=hourly_platform_listen)
+  plt.xlabel('Hour of the Day')
+  plt.ylabel('Number of Songs Played')
+  plt.title('Hourly Listening Pattern across Platforms')
+  plt.show()
+
+  5. Daily listening pattern:
+  daily_platform_listen = df.groupby(['platform', df['Timestamp'].dt.dayofweek])['ms_played'].count().reset_index()
+
+  plt.figure(figsize=(15, 6))
+  sns.pointplot(x='Timestamp', y='ms_played', hue='platform', data=daily_platform_listen)
+  plt.xlabel('Day of the Week')
+  plt.ylabel('Number of Songs Played')
+  plt.title('Daily Listening Pattern across Platforms')
+  plt.show()
+```
+![image](https://github.com/user-attachments/assets/d85d710b-f9de-46cf-a5b0-574960a54ad3)
+![image](https://github.com/user-attachments/assets/f4885504-9bb8-4c74-b903-211386bc51f5)
+![image](https://github.com/user-attachments/assets/5bec6540-6a9d-402b-90d9-9aecbe392326)
+
+``` python
+  autoplay_starts = df[df['reason_start'] == 'app_opened']
+  manual_starts = df[df['reason_start'] != 'app_opened']
+
+  1. Skip Rates
+  autoplay_skip_rate = autoplay_starts['skipped'].mean()
+  manual_skip_rate = manual_starts['skipped'].mean()
+
+  print(f"Autoplay Skip Rate: {autoplay_skip_rate:.2%}")
+  print(f"Manual Skip Rate: {manual_skip_rate:.2%}")
+
+  2. Playtime Comparison
+  autoplay_avg_playtime = autoplay_starts['ms_played'].mean()
+  manual_avg_playtime = manual_starts['ms_played'].mean()
+
+  print(f"Average Autoplay Playtime: {autoplay_avg_playtime/1000:.2f} seconds")
+  print(f"Average Manual Playtime: {manual_avg_playtime/1000:.2f} seconds")
+```
+![image](https://github.com/user-attachments/assets/bda3390d-e3c4-4da2-a6f8-54a3e2a90a64)
+``` python
+  # 3. Hourly Listening Patterns (Autoplay vs. Manual)
+  plt.figure(figsize=(12, 6))
+  sns.histplot(autoplay_starts['Timestamp'].dt.hour, label='Autoplay', kde=True, color='skyblue')
+  sns.histplot(manual_starts['Timestamp'].dt.hour, label='Manual', kde=True, color='orange', alpha=0.7)
+  plt.xlabel('Hour of Day')
+  plt.ylabel('Frequency')
+  plt.title('Hourly Listening Patterns (Autoplay vs. Manual)')
+  plt.legend()
+  plt.show()
+
+  # 4.  Day of the Week Listening Patterns (Autoplay vs. Manual)
+  plt.figure(figsize=(12, 6))
+  sns.histplot(autoplay_starts['Timestamp'].dt.dayofweek, label='Autoplay', kde=True, color='skyblue')
+  sns.histplot(manual_starts['Timestamp'].dt.dayofweek, label='Manual', kde=True, color='orange', alpha=0.7)
+  plt.xlabel('Day of the Week (0=Monday, 6=Sunday)')
+  plt.ylabel('Frequency')
+  plt.title('Daily Listening Patterns (Autoplay vs. Manual)')
+  plt.legend()
+  plt.show()
+```
+![image](https://github.com/user-attachments/assets/caf9f73b-ebfd-40e1-86a4-185ffd82335f)
+![image](https://github.com/user-attachments/assets/b8787eb1-841d-413d-a944-237f35f845b0)
+``` python
+  avg_play_duration_per_session = df.groupby('platform')['ms_played'].mean().sort_values(ascending=False)
+  print("\nAverage Play Duration per Session by Platform:\n", avg_play_duration_per_session)
+```
+  ![image](https://github.com/user-attachments/assets/e9ebe55a-3549-4013-8260-2528e1a3f8cc)
+
+``` python
+  # Calculating the number of times each track is played by each user.
+  track_plays_per_user = df.groupby(['track_name'])['track_name'].count()
+
+  # Identifying tracks played more than once.
+  repeated_tracks = track_plays_per_user[track_plays_per_user > 1]
+
+  # Calculating the percentage of tracks played multiple times.
+  percentage_repeated_tracks = (len(repeated_tracks) / len(track_plays_per_user)) * 100
+
+  print(f"{percentage_repeated_tracks:.2f}% of tracks are played multiple times.")
+```
+![image](https://github.com/user-attachments/assets/89459f3a-52a6-4718-9277-ae15199cd232)
+
+**Hypothesis Testing**
+1. Song Skipping Behavior
+   ``` python
+     #Null Hypothesis (H₀): There is no difference in skipping behavior between different platforms (mobile, desktop, web).
+     #Alternative Hypothesis (H₁): Skipping behavior significantly differs across platforms.
+
+     from scipy.stats import f_oneway
+     # Droping NaN values
+     df = df.dropna(subset=['platform', 'skipped'])
+     df['skipped'] = df['skipped'].astype(float)
+     platform_counts = df['platform'].value_counts()
+     print(platform_counts)
+
+     # We Perform ANOVA test
+     if all(platform in df['platform'].unique() for platform in ['mobile', 'desktop', 'web']):
+            f_statistic, p_value = f_oneway(
+            df[df['platform'] == 'mobile']['skipped'],
+            df[df['platform'] == 'desktop']['skipped'],
+            df[df['platform'] == 'web']['skipped']
+      )
+    print(f"F-statistic: {f_statistic}")
+    print(f"P-value: {p_value}")
+
+    alpha = 0.05
+    if p_value < alpha:
+        print("Reject the null hypothesis. There is a significant difference in skipping behavior across platforms.")
+    else:
+        print("Fail to reject the null hypothesis. There is no significant difference in skipping behavior across platforms.")
+    else:
+        print("Not all platforms have sufficient data.")
+   ```
+![image](https://github.com/user-attachments/assets/d77264bd-a0e0-4356-a3bf-3e1fa1b44e5b)
+
+``` python
+  #H₀: Shuffle mode does not impact skipping rates.
+  #H₁: Shuffle mode increases or decreases skipping rates compared to manual selection.
+
+  #We Perform t-test
+  from scipy.stats import ttest_ind
+  t_statistic, p_value = ttest_ind(autoplay_starts['skipped'], manual_starts['skipped'])
+
+  print(f"T-statistic: {t_statistic}")
+  print(f"P-value: {p_value}")
+
+  alpha = 0.05
+  if p_value < alpha:
+       print("Reject the null hypothesis. Shuffle mode impacts skipping rates.")
+  else:
+      print("Fail to reject the null hypothesis. Shuffle mode does not significantly impact skipping rates.")
+```
+![image](https://github.com/user-attachments/assets/d769a827-265f-4820-9e11-5a7443a30136)
+``` python
+   #H₀: Songs with a shorter duration are not skipped more often than longer songs.
+   #H₁: Shorter songs have a significantly higher skip rate than longer ones.
+
+   from scipy.stats import linregress
+
+   correlation_data = df.dropna(subset=['ms_played', 'skipped'])
+   correlation_data = correlation_data[correlation_data['ms_played'] > 0] # Remove zero duration songs
+   correlation_data = correlation_data[correlation_data['skipped'] >= 0]
+
+   #We Calculate the correlation
+   slope, intercept, r_value, p_value, std_err = linregress(correlation_data['ms_played'], correlation_data['skipped'])
+   print(f"Correlation coefficient: {r_value:.3f}")
+   print(f"P-value: {p_value:.3f}")
+
+   alpha = 0.05
+
+  if p_value < alpha:
+      print("Reject null hypothesis. There is a significant correlation between song duration and skip rate.")
+      if r_value < 0:
+          print("Shorter songs are more likely to be skipped.")
+      else:
+         print("Longer songs are more likely to be skipped.")
+  else:
+      print("Fail to reject null hypothesis. There is no significant correlation between song duration and skip rate.")
+```
+![image](https://github.com/user-attachments/assets/d12d5a70-5bbe-4750-ae5e-a1439fa2e14e)
+2. Platform Engagement
+``` python
+  #H₀: The average listening time per session is the same across all platforms.
+  #H₁: There is a significant difference in average listening time across platforms.
+
+  #We Perform ANOVA test
+  from scipy.stats import f_oneway
+
+  platform_groups = df.groupby('platform')['ms_played'].apply(list)
+
+  # Perform ANOVA test
+  f_statistic, p_value = f_oneway(*platform_groups)
+
+  print(f"F-statistic: {f_statistic}")
+  print(f"P-value: {p_value}")
+
+  alpha = 0.05
+  if p_value < alpha:
+      print("Reject the null hypothesis. There is a significant difference in average listening time across platforms.")
+  else:
+      print("Fail to reject the null hypothesis. The average listening time per session is likely the same across all platforms.")
+```
+![image](https://github.com/user-attachments/assets/9e75485d-0ca0-4249-8ad6-f22685967f1a)
+``` python
+  from scipy.stats import ttest_ind
+  print(df[['platform', 'seconds_played']].isnull().sum())
+  df = df.dropna(subset=['platform', 'seconds_played'])
+  df['listening_time'] = pd.to_numeric(df['seconds_played'], errors='coerce')
+  print(df['platform'].value_counts())
+```
+![image](https://github.com/user-attachments/assets/a86015c8-053b-45a8-883d-be5355457c8f)
+``` python
+  desktop_listening = df[df['platform'] == 'desktop']['listening_time']
+  mobile_listening = df[df['platform'] == 'mobile']['listening_time']
+
+  if len(desktop_listening) > 0 and len(mobile_listening) > 0:
+      t_statistic, p_value = ttest_ind(desktop_listening, mobile_listening, equal_var=False)
+
+      print(f"T-statistic: {t_statistic}")
+      print(f"P-value: {p_value}")
+
+      alpha = 0.05  # Significance level
+      if p_value < alpha:
+          print("Reject H₀: Desktop users have significantly different listening habits than mobile users.")
+      else:
+         print("Fail to reject H₀: No significant difference in engagement between desktop and mobile users.")
+  else:
+      print("Not enough data for one or both groups.")
+```
+![image](https://github.com/user-attachments/assets/28cc51ce-5f3b-433d-b519-4d6b27aa25ab)
+3. Popularity & Song Completion Rates
+``` python
+   # H₀: Popular songs have the same completion rate as less popular songs.
+   # H₁: Popular songs have a significantly higher completion rate than less popular songs.
+
+  popularity_threshold = 50  #Choose your threshold accordingly
+  popular_songs = df[df['popularity'] >= popularity_threshold]
+  less_popular_songs = df[df['popularity'] < popularity_threshold]
+
+  # Calculating completion rates (1 - skip_rate)
+
+  popular_completion_rate = 1 - popular_songs['skipped'].mean()
+  less_popular_completion_rate = 1 - less_popular_songs['skipped'].mean()
+
+  print(f"Completion rate for popular songs: {popular_completion_rate:.2f}")
+  print(f"Completion rate for less popular songs: {less_popular_completion_rate:.2f}")
+
+  from scipy.stats import ttest_ind
+
+  # Perform t-test for two independent samples
+  t_statistic, p_value = ttest_ind(popular_songs['skipped'], less_popular_songs['skipped'])
+
+  print(f"T-statistic: {t_statistic}")
+  print(f"P-value: {p_value}")
+
+  alpha = 0.05
+
+  if p_value < alpha:
+      print("Reject the null hypothesis. Popular songs have a significantly different completion rate than less popular songs.")
+      if popular_completion_rate > less_popular_completion_rate:
+          print("Popular songs have a higher completion rate.")
+      else:
+          print("Popular songs have a lower completion rate.")
+  else:
+      print("Fail to reject the null hypothesis. There is no significant difference in completion rate between popular and less popular songs.")
+```
+![image](https://github.com/user-attachments/assets/e6fd0c7d-2dab-4c73-8fe7-c38155f93b72)
+
+4. Effect of Shuffle Mode
+``` python
+  #H₀: There is no difference in the total time spent listening when shuffle mode is enabled vs. disabled.
+  #H₁: Users spend significantly more or less time listening when shuffle mode is enabled.
+
+  #We perform a t-test
+  from scipy.stats import ttest_ind
+
+  shuffle_on = df[df['shuffle'] == 1]['ms_played']
+  shuffle_off = df[df['shuffle'] == 0]['ms_played']
+
+  if len(shuffle_on) > 0 and len(shuffle_off) > 0 :
+      t_statistic, p_value = ttest_ind(shuffle_on, shuffle_off)
+      print(f"T-statistic: {t_statistic}")
+      print(f"P-value: {p_value}")
+
+      alpha = 0.05
+      if p_value < alpha:
+          print("Reject the null hypothesis. There's a significant difference in listening time between shuffle on and shuffle off.")
+      else:
+          print("Fail to reject the null hypothesis. No significant difference in listening time between shuffle on and shuffle off.")
+  else:
+      print("Not enough data for one or both groups.")
+```
+![image](https://github.com/user-attachments/assets/95af2014-d781-40e9-9404-46fe70c9ea7d)
+
+``` python
+   # H₀: Skipping rates are the same whether shuffle mode is on or off. 
+   # H₁: Skipping rates significantly increase or decrease when shuffle mode is enabled.
+
+   from scipy.stats import ttest_ind
+   shuffle_on = df[df['shuffle'] == 1]['skipped']
+   shuffle_off = df[df['shuffle'] == 0]['skipped']
+
+   #We  Perform t-test
+   t_statistic, p_value = ttest_ind(shuffle_on, shuffle_off)
+
+   print(f"T-statistic: {t_statistic}")
+   print(f"P-value: {p_value}")
+
+   alpha = 0.05
+
+    if p_value < alpha:
+        print("Reject the null hypothesis. Shuffle mode impacts skipping rates.")
+    else:
+        print("Fail to reject the null hypothesis. Shuffle mode does not significantly impact skipping rates.")
+```
+![image](https://github.com/user-attachments/assets/5033c6e9-10fe-46a5-9956-bf1942c66f86)
+
+5. Time-Based Listening Patterns
+``` python
+  
+```
 
 
 ### Insights
