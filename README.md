@@ -99,10 +99,10 @@ The objective of this analysis is to:
 ```
 
 ``` python
-df.shape
+  df.shape
 ```
 ``` python
-df.ndim
+  df.ndim
 ```
 
 
@@ -111,6 +111,55 @@ df.ndim
 
 
 ### Insights
+- Skipping behaviour based on reason for starting the song was more on trackdone, fwdbtn.
+- Skipping behaviour over time took place more in the starting hour of the day & ending hour of the day
+- Hourly skip rates with shuffle ON was highest at 6th hour of the day when shuffle was On & shuffle OFF where highest was at 8th hour when shuffles was OFF
+- Skip rates took place more on Windows.
+- The skip rates by reason for starting and ending a a song is users who use fwdbtn and trackdone.
+- Users were listening to the songs more on Friday.
+
+- The most songs played were
+1. Ode To The
+2. Mets                                                                        
+3. The Return of the King (feat. Sir James Galway, Viggo Mortensen and Renee
+Fleming)
+4. The Fellowship Reunited (feat. Sir James Galway, Viggo Mortensen and Renée Fleming)    
+5. 19 Dias y 500 Noches - En
+6. Directo In the Blood                                                                           
+
+- The most skipped songs were:
+1. Paraíso                                              
+2. Photograph                                      
+3. Superheroes                                     
+4. Switzerland                                       
+5. What Do You Mean?
+
+- The artists which have the highest total playtime is
+1. The Beatles           
+2. The Killers           
+3. John Mayer             
+4. Bob Dylan              
+5. Paul McCartney         
+6. Howard Shore           
+7. The Strokes            
+8. The Rolling Stones     
+9. Pink Floyd             
+10. Led Zeppelin      
+
+- The albums with the highest total playtime
+1. The Beatles                                           
+2. The New Abnormal                                      
+3. Imploding The Mirage                                  
+4. Abbey Road                                            
+5. Past Masters                                          
+6. Blood On The Tracks                                   
+7. Hot Fuss                                              
+8. The Wall                                              
+9. Pressure Machine                                      
+10. Where the Light Is: John Mayer Live In Los Angeles
+    
+- Average skip rates by release year highest was on 2004, 2008, 2012.
+- Total listening time by users on plstforms were more on Android, cast to device and IOS.
 
 ### Recommendations
 
